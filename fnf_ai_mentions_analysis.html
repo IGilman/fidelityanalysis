@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fidelity National Financial — AI Mentions &amp; Headcount Analysis</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8f8fa;
+    --surface: #ffffff;
+    --border: #e5e7eb;
+    --accent: #1e3a5f;
+    --accent-light: #2d5a8e;
+    --accent-faint: #edf2f9;
+    --auto-color: #b45309;
+    --auto-faint: #fef9ec;
+    --headcount: #0f766e;
+    --text: #1e293b;
+    --muted: #64748b;
+    --light-muted: #94a3b8;
+    --chatgpt-color: #16a34a;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 48px 32px;
+    line-height: 1.5;
+  }
+
+  header { max-width: 1100px; margin: 0 auto 36px; }
+
+  .kicker {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  h1 { font-size: clamp(22px, 3.5vw, 36px); font-weight: 800; line-height: 1.15; margin-bottom: 12px; }
+  h1 .accent { color: var(--accent); }
+
+  .subtitle { font-size: 14px; color: var(--muted); max-width: 760px; line-height: 1.6; }
+
+  .caveat {
+    margin-top: 14px;
+    padding: 10px 14px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #78350f;
+    max-width: 860px;
+    line-height: 1.55;
+  }
+
+  .stats-row {
+    max-width: 1100px;
+    margin: 0 auto 32px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+
+  .stat-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .stat-num { font-size: 30px; font-weight: 800; line-height: 1; color: var(--accent); }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+  .stat-card.hc .stat-num { color: var(--headcount); }
+  .stat-card.auto .stat-num { color: var(--auto-color); }
+  .stat-card.first .stat-num { font-size: 20px; margin-top: 4px; }
+
+  .section-header {
+    max-width: 1100px;
+    margin: 0 auto 14px;
+  }
+  .section-header .kicker { margin-bottom: 3px; }
+  .section-header h2 { font-size: 18px; font-weight: 700; margin-bottom: 3px; }
+  .section-header p { font-size: 13px; color: var(--muted); }
+
+  .chart-card {
+    max-width: 1100px;
+    margin: 0 auto 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px 20px;
+  }
+
+  .chart-legend {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .legend-line {
+    width: 24px;
+    height: 3px;
+    border-radius: 2px;
+  }
+  .legend-line.ai { background: var(--accent); }
+  .legend-line.auto { background: var(--auto-color); }
+
+  .legend-dot-solid {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--headcount);
+  }
+
+  .legend-dot-open {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--headcount);
+    background: transparent;
+  }
+
+  canvas { max-height: 260px; }
+
+  /* Quarter cards */
+  .quarters-grid {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .year-group { margin-bottom: 24px; }
+
+  .year-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--light-muted);
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cards-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  .qcard {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    transition: box-shadow 0.15s;
+  }
+
+  .qcard.has-ai {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-faint);
+  }
+
+  .qcard.has-auto {
+    border-left: 3px solid var(--auto-color);
+    background: var(--auto-faint);
+  }
+
+  .qcard-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .qcard-quarter {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .qcard-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+
+  .badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .badge.ai { background: var(--accent); color: #fff; }
+  .badge.auto { background: var(--auto-color); color: #fff; }
+  .badge.zero { background: #f1f5f9; color: var(--light-muted); }
+
+  .zero-note {
+    font-size: 11px;
+    color: var(--light-muted);
+    font-style: italic;
+  }
+
+  details { margin-top: 2px; }
+
+  details > summary {
+    font-size: 11px;
+    color: var(--accent-light);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::before { content: '▸ '; font-size: 9px; }
+  details[open] > summary::before { content: '▾ '; }
+
+  .excerpt-list { margin-top: 10px; display: flex; flex-direction: column; gap: 10px; }
+
+  .excerpt-item {}
+
+  .excerpt-source {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--light-muted);
+    margin-bottom: 4px;
+  }
+
+  .excerpt-text {
+    font-size: 11.5px;
+    color: var(--text);
+    line-height: 1.55;
+    background: #f8fafc;
+    border-left: 2px solid var(--border);
+    padding: 7px 10px;
+    border-radius: 0 4px 4px 0;
+  }
+
+  .excerpt-text mark {
+    background: #fef08a;
+    color: inherit;
+    border-radius: 2px;
+    padding: 0 1px;
+  }
+
+  .note-text {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+    font-style: italic;
+    background: #f8fafc;
+    border-left: 2px solid var(--border);
+    padding: 6px 10px;
+    border-radius: 0 4px 4px 0;
+  }
+
+  footer {
+    max-width: 1100px;
+    margin: 48px auto 0;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--light-muted);
+    text-align: center;
+  }
+
+  @media (max-width: 900px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 700px) {
+    body { padding: 24px 16px; }
+    .cards-row { grid-template-columns: repeat(2, 1fr); }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    canvas { max-height: 220px; }
+    .chart-card { padding: 16px 16px 14px; }
+  }
+
+  @media (max-width: 420px) {
+    .cards-row { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kicker">Mortgage &amp; Title AI Impact Series</div>
+  <h1>Fidelity National Financial <span class="accent">(FNF)</span><br>AI &amp; Automation Mention Analysis</h1>
+  <p class="subtitle">Keyword tracking across 10-K annual reports, 10-Q quarterly filings, and earnings press releases — Q1&nbsp;2020 through Q4&nbsp;2025. FNF is the largest U.S. title insurer (~33% market share), operating Fidelity National Title, Chicago Title, Commonwealth Land Title, and Alamo Title.</p>
+  <div class="caveat">
+    <strong>Coverage note:</strong> FNF does not publish earnings call transcripts. Sources are 10-K (Q4 annual), 10-Q (Q1–Q3 quarterly), and press releases only. AI/automation counts are structurally lower than transcript-based peer analyses (RKT, FAF, UWMC) — formal filings use more conservative language than earnings call Q&amp;A exchanges. Do not compare raw mention counts directly to transcript-based dashboards without noting this difference.
+  </div>
+</header>
+
+<!-- Key Stats -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-label">Total AI/ML Mentions</div>
+    <div class="stat-num">56</div>
+    <div class="stat-sub">All quarters combined (10-K + 10-Q + PR)</div>
+  </div>
+  <div class="stat-card first">
+    <div class="stat-label">Peak Quarter</div>
+    <div class="stat-num">19</div>
+    <div class="stat-sub">Q4 2024 &amp; Q4 2025 (tied) — 10-K Risk Factors</div>
+  </div>
+  <div class="stat-card hc">
+    <div class="stat-label">Headcount (Dec 2025)</div>
+    <div class="stat-num">24,535</div>
+    <div class="stat-sub">FTE stated in 10-K; 22,790 in Title segment</div>
+  </div>
+  <div class="stat-card auto">
+    <div class="stat-label">Total Automation Mentions</div>
+    <div class="stat-num">4</div>
+    <div class="stat-sub">Q4 2020 – Q2 2021 only; zero since then</div>
+  </div>
+</div>
+
+<!-- AI / Automation Chart -->
+<div class="section-header">
+  <div class="kicker">Chart 1 of 2</div>
+  <h2>AI/ML and Automation Keyword Mentions by Quarter</h2>
+  <p>10-K (Q4), 10-Q (Q1–Q3), and press release counts combined per quarter. AI/ML and automation families tracked separately.</p>
+</div>
+<div class="chart-card">
+  <div class="chart-legend">
+    <div class="legend-item"><div class="legend-line ai"></div> AI/ML family (AI, Artificial Intelligence, Machine Learning, Generative AI, LLM, etc.)</div>
+    <div class="legend-item"><div class="legend-line auto"></div> Automation family (automation, automated, automate, automatically, etc.)</div>
+  </div>
+  <canvas id="aiChart"></canvas>
+</div>
+
+<!-- Headcount Chart -->
+<div class="section-header">
+  <div class="kicker">Chart 2 of 2</div>
+  <h2>Full-Time Equivalent Employees</h2>
+  <p>Year-end figures stated in 10-K Human Capital Resources section. Interim quarters linearly interpolated between stated year-end values.</p>
+</div>
+<div class="chart-card">
+  <div class="chart-legend">
+    <div class="legend-item"><div class="legend-dot-solid"></div> Stated (10-K year-end)</div>
+    <div class="legend-item"><div class="legend-dot-open"></div> Interpolated estimate</div>
+  </div>
+  <canvas id="hcChart"></canvas>
+</div>
+
+<!-- Quarter Cards -->
+<div class="section-header">
+  <div class="kicker">Quarter Detail</div>
+  <h2>Keyword Excerpts by Quarter</h2>
+  <p>Quarters with zero mentions are collapsed. Click any card to see excerpts and source context.</p>
+</div>
+<div class="quarters-grid" id="quarters-grid"></div>
+
+<footer>
+  Fidelity National Financial (FNF) · AI &amp; Automation Mention Analysis · Q1 2020 – Q4 2025<br>
+  Sources: SEC Form 10-K, Form 10-Q, quarterly earnings press releases · No earnings call transcripts available for FNF
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+<script>
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+
+const QUARTERS = [
+  'Q1 2020','Q2 2020','Q3 2020','Q4 2020',
+  'Q1 2021','Q2 2021','Q3 2021','Q4 2021',
+  'Q1 2022','Q2 2022','Q3 2022','Q4 2022',
+  'Q1 2023','Q2 2023','Q3 2023','Q4 2023',
+  'Q1 2024','Q2 2024','Q3 2024','Q4 2024',
+  'Q1 2025','Q2 2025','Q3 2025','Q4 2025'
+];
+
+// AI/ML family: AI, Artificial Intelligence, Machine Learning, ML, NLP, LLM,
+// Large Language Model, Generative AI, Agentic AI, ChatGPT, OpenAI, Anthropic
+const AI_COUNTS = [
+  0, 0, 0, 0,   // 2020
+  0, 0, 0, 0,   // 2021
+  0, 0, 0, 0,   // 2022
+  0, 0, 0, 16,  // 2023 — Q4: first AI risk factor in 10-K
+  0, 2, 0, 19,  // 2024 — Q2: CAIO named in PR; Q4: expanded AI risk factor + PR
+  0, 0, 0, 19   // 2025 — Q4: risk factor retained + "safe and responsible AI usage" in training
+];
+
+// Automation family: automation, automated, automate, automating, automatically, automates
+const AUTO_COUNTS = [
+  0, 0, 0, 1,   // 2020 — Q4 10-K: 1 automation mention
+  2, 1, 0, 0,   // 2021 — Q1 10-Q: 2; Q2 10-Q: 1
+  0, 0, 0, 0,   // 2022
+  0, 0, 0, 0,   // 2023
+  0, 0, 0, 0,   // 2024
+  0, 0, 0, 0    // 2025
+];
+
+// Headcount: year-end 10-K stated figures; interim quarters linearly interpolated.
+// Stated year-ends: 2020=27,058 | 2021=28,290 | 2022=21,759 | 2023=22,293 | 2024=23,533 | 2025=24,535
+// Q1-Q3 2020 estimated at ~27,000 (pre-2020 year-end baseline; 2019 not available).
+const HEADCOUNT = [
+  27000, 27000, 27000, 27058,  // 2020
+  27366, 27674, 27982, 28290,  // 2021
+  26657, 25025, 23392, 21759,  // 2022
+  21893, 22026, 22160, 22293,  // 2023
+  22603, 22913, 23223, 23533,  // 2024
+  23784, 24034, 24285, 24535   // 2025
+];
+
+// true = stated in 10-K Human Capital Resources section; false = interpolated estimate
+const HC_STATED = [
+  false, false, false, true,
+  false, false, false, true,
+  false, false, false, true,
+  false, false, false, true,
+  false, false, false, true,
+  false, false, false, true
+];
+
+// ChatGPT launched November 2022 — between Q3 2022 (index 10) and Q4 2022 (index 11)
+const CHATGPT_IDX = 10.5;
+
+// ─── CONTEXT / EXCERPTS ────────────────────────────────────────────────────────
+
+const CONTEXT = {
+  'Q4 2020': {
+    type: 'auto',
+    excerpts: [
+      {
+        source: '10-K Annual Report — MD&A / Operations',
+        text: null,
+        note: 'One automation-family keyword found in the 2020 Annual Report. Mention appears in the Title segment operational discussion. Specific excerpt not captured in this analysis — see FNF_Q4_2020_10K.pdf for full context. Language is operational efficiency–focused, predating any AI vocabulary in FNF filings.'
+      }
+    ]
+  },
+  'Q1 2021': {
+    type: 'auto',
+    excerpts: [
+      {
+        source: '10-Q Quarterly Filing — MD&A / Operations',
+        text: null,
+        note: 'Two automation-family keywords found in the Q1 2021 quarterly report. Mentions appear in the Title segment operational discussion. Specific excerpts not captured in this analysis — see FNF_Q1_2021_10Q.pdf. Language is consistent with routine efficiency/process automation references common in 2020–2021 filing language.'
+      }
+    ]
+  },
+  'Q2 2021': {
+    type: 'auto',
+    excerpts: [
+      {
+        source: '10-Q Quarterly Filing — MD&A / Operations',
+        text: null,
+        note: 'One automation-family keyword found in the Q2 2021 quarterly report. Mention appears in the Title segment operational discussion. Specific excerpt not captured in this analysis — see FNF_Q2_2021_10Q.pdf.'
+      }
+    ]
+  },
+  'Q4 2023': {
+    type: 'ai',
+    excerpts: [
+      {
+        source: '10-K Annual Report — Item 1A Risk Factors (General Risk Factors)',
+        text: '<mark>The new and emerging types of Artificial Intelligence</mark> and their uses are very early stage in the industry and may be subject to many uncertain future developments and regulations. Regulatory agencies are evaluating existing regulatory frameworks for insurance industry wide use of <mark>Artificial Intelligence</mark>. New <mark>artificial intelligence</mark> algorithms and predictive models may be used by insurance companies in selling insurance products to consumers. However, the use of new <mark>artificial intelligence</mark> models may make insurance companies more susceptible to potential bias, discrimination and data breaches. These concerns could lead to development of new, or modifications to, laws and regulations pertaining to the use of <mark>Artificial Intelligence</mark> by insurance companies or the broader financial services sector…',
+        note: null
+      },
+      {
+        source: 'Signal',
+        text: null,
+        note: 'First appearance of AI language in any FNF SEC filing. A large boilerplate AI risk factor block was introduced in the Q4 2023 10-K (16 AI/ML mentions total), under the General Risk Factors section. No AI language appeared in the Q4 2023 press release. The language is entirely regulatory/risk-disclosure–focused — not operational. This pattern is consistent with many insurers adding AI risk factors to their 10-Ks in 2023 following the surge in generative AI adoption.'
+      }
+    ]
+  },
+  'Q2 2024': {
+    type: 'ai',
+    excerpts: [
+      {
+        source: 'Press Release — Q2 2024 Earnings',
+        text: null,
+        note: 'FNF\'s Q2 2024 press release is the first press release in the analysis period to contain AI vocabulary (2 AI/ML mentions). The mentions relate to the appointment of a <mark>Chief Artificial Intelligence Officer</mark> — signaling formal organizational commitment to AI at the executive level. This is a stronger signal than risk factor boilerplate because it represents an operational/organizational decision rather than regulatory disclosure language. The 10-Q for Q2 2024 contained no AI mentions (Risk Factors incorporated by reference from prior 10-K).'
+      }
+    ]
+  },
+  'Q4 2024': {
+    type: 'ai',
+    excerpts: [
+      {
+        source: '10-K Annual Report — Item 1A Risk Factors (General Risk Factors)',
+        text: 'The use of <mark>artificial intelligence</mark> and <mark>machine learning</mark> technologies, including <mark>generative artificial intelligence</mark>, has increased rapidly with increasing complexity and changes in the nature of the technology. Our potential uses of <mark>generative artificial intelligence</mark> may be subject to various risks including flaws or limitations in the <mark>large language models</mark> or training datasets that may result in biased or inaccurate results, ethical considerations, and the ability to safely deploy and implement governance and controls for such systems. Laws and regulations related to <mark>artificial intelligence</mark> are evolving, and there is uncertainty as to potential adoption of new laws and regulations and the application of existing laws and regulations to use of <mark>artificial intelligence</mark>…',
+        note: null
+      },
+      {
+        source: 'Press Release — Q4 2024 Earnings',
+        text: null,
+        note: 'CEO Mike Nolan referenced use of <mark>generative AI tools</mark> in the context of operational efficiency — the first time AI language appeared in an FNF CEO earnings quote. One AI mention in the press release.'
+      },
+      {
+        source: 'Signal',
+        text: null,
+        note: '10-K AI risk factor expanded significantly relative to Q4 2023, adding generative AI and large language model–specific language. Total: 18 AI/ML mentions in the 10-K + 1 in the press release = 19 combined. The addition of LLM/generative AI language reflects broader industry acknowledgment of ChatGPT-era technologies in SEC filings.'
+      }
+    ]
+  },
+  'Q4 2025': {
+    type: 'ai',
+    excerpts: [
+      {
+        source: '10-K Annual Report — Item 1 Business, Human Capital Resources (Training)',
+        text: 'FNF offers a variety of training and educational opportunities for employees including, but not limited to, training on escrow policies and procedures, advanced escrow processing and practices, title loss reduction, title underwriting, advanced title practices and procedures, fraud prevention, data privacy, <mark>safe and responsible AI usage</mark>, as well as leadership effectiveness, software, soft skills, sales, and time management trainings.',
+        note: null
+      },
+      {
+        source: '10-K Annual Report — Item 1A Risk Factors (General Risk Factors)',
+        text: '<mark>The new and emerging types of Artificial Intelligence</mark> and their uses are very early stage in the industry and may be subject to many uncertain future developments and regulations. Regulatory agencies are evaluating existing regulatory frameworks for insurance industry wide use of <mark>Artificial Intelligence</mark>… The use of <mark>artificial intelligence</mark> and <mark>machine learning</mark> technologies, including <mark>generative artificial intelligence</mark>, has increased rapidly with increasing complexity and changes in the nature of the technology. Our potential uses of <mark>generative artificial intelligence</mark> may be subject to various risks including flaws or limitations in the <mark>large language models</mark> or training datasets that may result in biased or inaccurate results…',
+        note: null
+      },
+      {
+        source: 'Signal',
+        text: null,
+        note: 'AI risk factor retained at the same scale as Q4 2024 (~18 mentions in Risk Factors). New addition in Q4 2025: "safe and responsible AI usage" appears in the Training section of Human Capital Resources — the first time AI appears in an operational/HR context in any FNF filing, suggesting internal AI governance programs are now formalized. The Q4 2025 press release contains no AI language (0 mentions). Q4 2025 total: 19 AI/ML mentions, all from the 10-K.'
+      }
+    ]
+  }
+};
+
+// ─── CHART: AI / AUTOMATION ───────────────────────────────────────────────────
+
+const chatGPTAnnotation = {
+  type: 'line',
+  xMin: CHATGPT_IDX,
+  xMax: CHATGPT_IDX,
+  borderColor: '#86efac',
+  borderWidth: 1.5,
+  borderDash: [5, 4],
+  label: {
+    display: true,
+    content: 'ChatGPT  Nov 2022',
+    position: 'start',
+    yAdjust: 12,
+    color: '#15803d',
+    backgroundColor: 'rgba(248,255,248,0.9)',
+    font: { family: "'DM Mono', monospace", size: 10 },
+    padding: { x: 5, y: 3 }
+  }
+};
+
+Chart.register(window['chartjs-plugin-annotation'] || {});
+
+new Chart(document.getElementById('aiChart'), {
+  type: 'line',
+  data: {
+    labels: QUARTERS,
+    datasets: [
+      {
+        label: 'AI/ML Mentions',
+        data: AI_COUNTS,
+        borderColor: '#1e3a5f',
+        backgroundColor: 'rgba(30,58,95,0.06)',
+        borderWidth: 2.5,
+        pointRadius: AI_COUNTS.map(v => v > 0 ? 6 : 3),
+        pointBackgroundColor: '#1e3a5f',
+        pointBorderColor: '#1e3a5f',
+        tension: 0.25,
+        fill: false,
+        order: 1
+      },
+      {
+        label: 'Automation Mentions',
+        data: AUTO_COUNTS,
+        borderColor: '#b45309',
+        backgroundColor: 'rgba(180,83,9,0.06)',
+        borderWidth: 2.5,
+        pointRadius: AUTO_COUNTS.map(v => v > 0 ? 6 : 3),
+        pointBackgroundColor: '#b45309',
+        pointBorderColor: '#b45309',
+        tension: 0.25,
+        fill: false,
+        order: 2
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: ctx => ctx[0].label,
+          label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}`
+        }
+      },
+      annotation: { annotations: { chatgpt: chatGPTAnnotation } }
+    },
+    scales: {
+      x: {
+        grid: { color: '#f1f5f9' },
+        ticks: { font: { family: "'DM Mono', monospace", size: 10 }, color: '#94a3b8', maxRotation: 45 }
+      },
+      y: {
+        beginAtZero: true,
+        suggestedMax: 22,
+        grid: { color: '#f1f5f9' },
+        ticks: { font: { family: "'DM Mono', monospace", size: 10 }, color: '#94a3b8', stepSize: 5 }
+      }
+    }
+  }
+});
+
+// ─── CHART: HEADCOUNT ─────────────────────────────────────────────────────────
+
+new Chart(document.getElementById('hcChart'), {
+  type: 'line',
+  data: {
+    labels: QUARTERS,
+    datasets: [{
+      label: 'FTE Employees',
+      data: HEADCOUNT,
+      borderColor: '#0f766e',
+      backgroundColor: 'rgba(15,118,110,0.06)',
+      borderWidth: 2.5,
+      pointRadius: HC_STATED.map(s => s ? 7 : 4),
+      pointBackgroundColor: HC_STATED.map(s => s ? '#0f766e' : 'rgba(255,255,255,0)'),
+      pointBorderColor: '#0f766e',
+      pointBorderWidth: 2,
+      tension: 0.3,
+      fill: false
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: ctx => ctx[0].label,
+          label: ctx => {
+            const stated = HC_STATED[ctx.dataIndex];
+            return ` ${ctx.parsed.y.toLocaleString()} FTE ${stated ? '[STATED — 10-K]' : '[interpolated est.]'}`;
+          }
+        }
+      },
+      annotation: {
+        annotations: {
+          chatgpt: {
+            ...chatGPTAnnotation,
+            label: { ...chatGPTAnnotation.label, yAdjust: 40 }
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: '#f1f5f9' },
+        ticks: { font: { family: "'DM Mono', monospace", size: 10 }, color: '#94a3b8', maxRotation: 45 }
+      },
+      y: {
+        min: 18000,
+        suggestedMax: 32000,
+        grid: { color: '#f1f5f9' },
+        ticks: {
+          font: { family: "'DM Mono', monospace", size: 10 },
+          color: '#94a3b8',
+          callback: v => (v / 1000).toFixed(0) + 'k'
+        }
+      }
+    }
+  }
+});
+
+// ─── QUARTER CARDS ─────────────────────────────────────────────────────────────
+
+function buildCards() {
+  const grid = document.getElementById('quarters-grid');
+  const years = ['2020', '2021', '2022', '2023', '2024', '2025'];
+
+  years.forEach(yr => {
+    const grp = document.createElement('div');
+    grp.className = 'year-group';
+
+    const lbl = document.createElement('div');
+    lbl.className = 'year-label';
+    lbl.textContent = yr;
+    grp.appendChild(lbl);
+
+    const row = document.createElement('div');
+    row.className = 'cards-row';
+
+    ['Q1', 'Q2', 'Q3', 'Q4'].forEach(q => {
+      const key = `${q} ${yr}`;
+      const idx = QUARTERS.indexOf(key);
+      const ai = AI_COUNTS[idx];
+      const auto = AUTO_COUNTS[idx];
+      const hasData = ai > 0 || auto > 0;
+      const ctx = CONTEXT[key];
+
+      const card = document.createElement('div');
+      card.className = 'qcard' + (ai > 0 ? ' has-ai' : (auto > 0 ? ' has-auto' : ''));
+
+      // Header
+      const hdr = document.createElement('div');
+      hdr.className = 'qcard-header';
+      const qlbl = document.createElement('div');
+      qlbl.className = 'qcard-quarter';
+      qlbl.textContent = key;
+      hdr.appendChild(qlbl);
+
+      const bdgs = document.createElement('div');
+      bdgs.className = 'qcard-badges';
+      if (ai > 0) {
+        const b = document.createElement('span');
+        b.className = 'badge ai';
+        b.textContent = `AI ${ai}`;
+        bdgs.appendChild(b);
+      }
+      if (auto > 0) {
+        const b = document.createElement('span');
+        b.className = 'badge auto';
+        b.textContent = `Auto ${auto}`;
+        bdgs.appendChild(b);
+      }
+      if (!hasData) {
+        const b = document.createElement('span');
+        b.className = 'badge zero';
+        b.textContent = '—';
+        bdgs.appendChild(b);
+      }
+      hdr.appendChild(bdgs);
+      card.appendChild(hdr);
+
+      if (!hasData) {
+        const note = document.createElement('div');
+        note.className = 'zero-note';
+        note.textContent = 'No AI/automation mentions';
+        card.appendChild(note);
+      } else if (ctx) {
+        const det = document.createElement('details');
+
+        const sum = document.createElement('summary');
+        sum.textContent = 'Show excerpts & context';
+        det.appendChild(sum);
+
+        const list = document.createElement('div');
+        list.className = 'excerpt-list';
+
+        ctx.excerpts.forEach(ex => {
+          const item = document.createElement('div');
+          item.className = 'excerpt-item';
+
+          const src = document.createElement('div');
+          src.className = 'excerpt-source';
+          src.textContent = ex.source;
+          item.appendChild(src);
+
+          if (ex.text) {
+            const txt = document.createElement('div');
+            txt.className = 'excerpt-text';
+            txt.innerHTML = ex.text;
+            item.appendChild(txt);
+          }
+
+          if (ex.note) {
+            const note = document.createElement('div');
+            note.className = 'note-text';
+            note.innerHTML = ex.note;
+            item.appendChild(note);
+          }
+
+          list.appendChild(item);
+        });
+
+        det.appendChild(list);
+        card.appendChild(det);
+      }
+
+      row.appendChild(card);
+    });
+
+    grp.appendChild(row);
+    grid.appendChild(grp);
+  });
+}
+
+buildCards();
+</script>
+</body>
+</html>
